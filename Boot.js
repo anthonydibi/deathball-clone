@@ -1,6 +1,5 @@
 
 
-
 var config = {
     type: Phaser.AUTO,
     width: 1280,
@@ -29,6 +28,8 @@ var S;
 var D;
 var leftPlayer;
 var rightPlayer;
+var leftGoal;
+var rightGoal;
 var leftDashing;
 var rightDashing;
 var leftScore;
@@ -37,13 +38,16 @@ var leftGoalCollider;
 var rightGoalCollider;
 var energySpheres;
 var ball;
+var platforms;
 var stars;
 var bombs;
 var platforms;
 var cursors;
 var score = 0;
 var gameOver = false;
+var scored = false;
 var scoreText;
+var slowmoCooldown;
 
 var game = new Phaser.Game(config);
 
@@ -62,11 +66,11 @@ function create ()
     //  A simple background for our game
     const map = this.make.tilemap({key: "map"});
     const tileset = map.addTilesetImage('dungeon', 'tiles');
-    const platforms = map.createLayer('Tile Layer 1', tileset, 0, 0);
+    platforms = map.createLayer('Tile Layer 1', tileset, 0, 0);
     platforms.setCollisionByExclusion(-1, true);
 
-    var leftGoal = new Phaser.GameObjects.Rectangle(this, 16, 440, 32, 144, 0xff0000);
-    var rightGoal = new Phaser.GameObjects.Rectangle(this, 1268, 440, 32, 144, 0x0000ff);
+    leftGoal = new Phaser.GameObjects.Rectangle(this, 16, 440, 32, 144, 0xff0000);
+    rightGoal = new Phaser.GameObjects.Rectangle(this, 1268, 440, 32, 144, 0x0000ff);
     var goals = this.physics.add.staticGroup();
     this.add.existing(leftGoal);
     this.add.existing(rightGoal);
@@ -153,6 +157,7 @@ function create ()
 }
 
 function goal(scene, side){
+    scored = true;
     leftGoalCollider.active = false;
     rightGoalCollider.active = false;
     scene.physics.world.timeScale = 2; 
@@ -202,6 +207,7 @@ function goal(scene, side){
 }
 
 function reset(scene){
+    scored = false;
     leftGoalCollider.active = true;
     rightGoalCollider.active = true;
     scene.physics.world.timeScale = 1;
@@ -401,4 +407,24 @@ function update ()
     this.physics.world.wrap(leftPlayer);
     this.physics.world.wrap(rightPlayer);
     this.physics.world.wrap(ball);
+
+    //slowmo when ball is near goal, has 20s cooldown
+    let ballCenter = ball.getCenter();
+    let leftGoalCenter = leftGoal.getCenter();
+    let rightGoalCenter = rightGoal.getCenter();
+    if((Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, leftGoalCenter.x, leftGoalCenter.y) < 200 || Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, rightGoalCenter.x, rightGoalCenter.y) < 200) && ballCenter.y < leftGoalCenter.y){
+        if(slowmoCooldown ? slowmoCooldown.getRemaining() === 0 : true){
+            this.physics.world.timeScale = 2; 
+            this.time.timeScale = 2;
+            slowmoCooldown = this.time.addEvent({
+                delay: 20000,
+                callback: () => {
+                }
+            })
+        }
+    }
+    else if(!scored){
+        this.physics.world.timeScale = 1; 
+        this.time.timeScale = 1;
+    }
 }
