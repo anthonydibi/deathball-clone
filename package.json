@@ -1,0 +1,23 @@
+{
+  "name": "deathball-clone",
+  "version": "1.0.0",
+  "description": "deathball-clone",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anthonydibi/deathball-clone.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/anthonydibi/deathball-clone/issues"
+  },
+  "homepage": "https://github.com/anthonydibi/deathball-clone#readme",
+  "dependencies": {
+    "express": "^4.18.1"
+  }
+}
