@@ -22,29 +22,17 @@ var config = {
     }
 };
 
-var A;
-var W;
-var S;
-var D;
-var leftPlayer;
-var rightPlayer;
-var leftGoal;
-var rightGoal;
-var leftDashing;
-var rightDashing;
-var leftScore;
-var rightScore;
-var leftGoalCollider;
-var rightGoalCollider;
+var arena;
+var bluePlayer;
+var redPlayer;
+var blueGoal;
+var redGoal;
+var blueScore;
+var redScore;
+var blueGoalCollider;
+var redGoalCollider;
 var energySpheres;
 var ball;
-var platforms;
-var stars;
-var bombs;
-var platforms;
-var cursors;
-var score = 0;
-var gameOver = false;
 var scored = false;
 var scoreText;
 var slowmoCooldown;
@@ -53,32 +41,32 @@ var game = new Phaser.Game(config);
 
 function preload ()
 {
+    arena = new Arena(this, 'assets/Tileset.png', 'assets/map1.json', 'dungeon', 'Tile Layer 1')
+    arena.preload();
     this.load.image('energysphere', 'assets/Energy_Ball.png');
     this.load.image('ball', 'assets/ball.png');
     this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
-  this.load.image('tiles', 'assets/Tileset.png');
-  // Load the export Tiled JSON
-  this.load.tilemapTiledJSON('map', 'assets/map1.json');
+    bluePlayer = new Player(this, 0x0000ff, 100, 600, "dude", "X", "W", "D", "S", "A");
+    redPlayer = new Player(this, 0xff0000, 1180, 600, "dude", "L", "UP", "RIGHT", "DOWN", "LEFT");
 }
 
 function create ()
 {
     //  A simple background for our game
-    const map = this.make.tilemap({key: "map"});
-    const tileset = map.addTilesetImage('dungeon', 'tiles');
-    platforms = map.createLayer('Tile Layer 1', tileset, 0, 0);
-    platforms.setCollisionByExclusion(-1, true);
-
-    leftGoal = new Phaser.GameObjects.Rectangle(this, 16, 440, 32, 144, 0xff0000);
-    rightGoal = new Phaser.GameObjects.Rectangle(this, 1268, 440, 32, 144, 0x0000ff);
+    energySpheres = this.physics.add.staticGroup();
+    arena.create();
+    bluePlayer.create();
+    redPlayer.create();
+    blueGoal = new Phaser.GameObjects.Rectangle(this, 16, 440, 32, 144, 0xff0000);
+    redGoal = new Phaser.GameObjects.Rectangle(this, 1268, 440, 32, 144, 0x0000ff);
     var goals = this.physics.add.staticGroup();
-    this.add.existing(leftGoal);
-    this.add.existing(rightGoal);
-    goals.add(leftGoal);
-    goals.add(rightGoal);
+    this.add.existing(blueGoal);
+    this.add.existing(redGoal);
+    goals.add(blueGoal);
+    goals.add(redGoal);
 
-    leftScore = this.add.text(24, 220, '3', { font: "40px Arial" });
-    rightScore = this.add.text(1236, 220, '3', { font: "40px Arial"});
+    blueScore = this.add.text(24, 220, '3', { font: "40px Arial" });
+    redScore = this.add.text(1236, 220, '3', { font: "40px Arial"});
 
     //  Here we create the ground.
     //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
@@ -86,14 +74,8 @@ function create ()
     //  Now let's create some ledges
 
     // The player and its settings
-    leftPlayer = this.physics.add.sprite(100, 600, 'dude');
-    rightPlayer = this.physics.add.sprite(1180, 600, 'dude');
-    leftPlayer.scale = .8;
-    rightPlayer.scale = .8;
 
     //  Player physics properties. Give the little guy a slight bounce.
-    leftPlayer.setCollideWorldBounds(false);
-    rightPlayer.setCollideWorldBounds(false);
 
 
     //  Our player animations, turning, walking left and walking right.
@@ -117,15 +99,8 @@ function create ()
         repeat: -1
     });
 
-    //  Input Events
-    cursors = this.input.keyboard.createCursorKeys();
-    A = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-    S = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-    D = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-    W = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
-
-    this.physics.add.collider(leftPlayer, platforms);
-    this.physics.add.collider(rightPlayer, platforms);
+    this.physics.add.collider(bluePlayer.gameObject, arena.platforms);
+    this.physics.add.collider(redPlayer.gameObject, arena.platforms);
 
     let balls = this.physics.add.group();
 
@@ -139,52 +114,50 @@ function create ()
 
     ball.setMass(.5);
 
-    energySpheres = this.physics.add.staticGroup();
-
-    this.physics.add.collider(balls, platforms);
-    this.physics.add.collider(leftPlayer, balls);
-    this.physics.add.collider(rightPlayer, balls);
-    this.physics.add.collider(leftPlayer, rightPlayer);
-    leftGoalCollider = this.physics.add.collider(balls, leftGoal, () => goal(this, "left"));
-    rightGoalCollider = this.physics.add.collider(balls, rightGoal, () => goal(this, "right"));
+    this.physics.add.collider(balls, arena.platforms);
+    this.physics.add.collider(bluePlayer.gameObject, balls);
+    this.physics.add.collider(redPlayer.gameObject, balls);
+    this.physics.add.collider(bluePlayer.gameObject, redPlayer.gameObject);
+    blueGoalCollider = this.physics.add.collider(balls, blueGoal, () => goal(this, "left"));
+    redGoalCollider = this.physics.add.collider(balls, redGoal, () => goal(this, "right"));
     this.physics.add.overlap(balls, energySpheres, ballCollidesEnergySphere);
 
-    var leftPlayerAction = this.input.keyboard.addKey('X');  // Get key object
-    var rightPlayerAction = this.input.keyboard.addKey('L');
-    leftPlayerAction.on('down', () => { onPlayerAction(this); spawnEnergySphere(leftPlayer, "blue"); });
-    rightPlayerAction.on('down', () => { onPlayerAction(this); spawnEnergySphere(rightPlayer, "red"); });
+    var controlsText = redScore = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY/2, `Controls:\n Blue (left): ${bluePlayer.upInput} ${bluePlayer.rightInput} ${bluePlayer.downInput} ${bluePlayer.leftInput} to move, ${bluePlayer.actionInput} to jump/dash\n Red (right): ${redPlayer.upInput} ${redPlayer.rightInput} ${redPlayer.downInput} ${redPlayer.leftInput} to move, ${redPlayer.actionInput} to jump/dash\n Press SPACE to show/hide controls`, { font: "30px Arial"});
+    var showControlsAction = this.input.keyboard.addKey("SPACE");
+    showControlsAction.on('down', () => { controlsText.setVisible(!controlsText.visible); });
+    controlsText.setOrigin(0.5);
     countdownRound(this);
 }
 
 function goal(scene, side){
     scored = true;
-    leftGoalCollider.active = false;
-    rightGoalCollider.active = false;
+    blueGoalCollider.active = false;
+    redGoalCollider.active = false;
     scene.physics.world.timeScale = 2; 
     scene.time.timeScale = 2;
     if(side === "left"){
-        leftScore.setText(parseInt(leftScore.text) - 1);
+        blueScore.setText(parseInt(blueScore.text) - 1);
     }
     else{
-        rightScore.setText(parseInt(rightScore.text) - 1);
+        redScore.setText(parseInt(redScore.text) - 1);
     }
-    let leftWin = parseInt(rightScore.text) === 0;
-    let rightWin = parseInt(leftScore.text) === 0;
-    if(leftWin || rightWin){
+    let blueWin = parseInt(redScore.text) === 0;
+    let redWin = parseInt(blueScore.text) === 0;
+    if(blueWin || redWin){
         var gameOverText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, 'GAME OVER', { font: "100px Arial" });
         gameOverText.setOrigin(0.5);
         var gameOverTextTimer = scene.time.addEvent({
             delay:6000,
             callback: () => {
                 gameOverText.destroy();
-                var winnerText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, (leftWin ? "BLUE" : "") + (rightWin ? "RED" : "") + " WINS", { font: "100px Arial" });
+                var winnerText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, (blueWin ? "BLUE" : "") + (redWin ? "RED" : "") + " WINS", { font: "100px Arial" });
                 winnerText.setOrigin(0.5);
                 var winnerTextTimer = scene.time.addEvent({
                     delay: 6000,
                     callback: () => {
                         winnerText.destroy();
-                        leftScore.setText("3");
-                        rightScore.setText("3");
+                        blueScore.setText("3");
+                        redScore.setText("3");
                         var resetTimer = scene.time.addEvent({
                             delay: 5000,                
                             callback: () => reset(scene),
@@ -208,24 +181,22 @@ function goal(scene, side){
 
 function reset(scene){
     scored = false;
-    leftGoalCollider.active = true;
-    rightGoalCollider.active = true;
+    blueGoalCollider.active = true;
+    redGoalCollider.active = true;
     scene.physics.world.timeScale = 1;
     scene.time.timeScale = 1;
-    leftPlayer.setPosition(100, 600);
-    rightPlayer.setPosition(1100, 600);
-    leftPlayer.energySphere?.setPosition(-100, -100).refreshBody();
-    rightPlayer.energySphere?.setPosition(-100, -100).refreshBody(); //move energy spheres out of scene
+    bluePlayer.reset();
+    redPlayer.reset(); 
     ball.setPosition(scene.cameras.main.centerX, scene.cameras.main.centerY);
     ball.setVelocity(0);
     countdownRound(scene);
 }
 
 function countdownRound(scene){
-    cursors.left.isDown = false;
-    cursors.right.isDown = false;
-    A.isDown = false;
-    D.isDown = false;
+    bluePlayer.left.isDown = false;
+    bluePlayer.right.isDown = false;
+    redPlayer.left.isDown = false;
+    redPlayer.right.isDown = false;
     scene.input.keyboard.manager.enabled = false;
     var countdownText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, '3', { font: "100px Arial" });
     countdownText.setOrigin(0.5);
@@ -263,156 +234,16 @@ function ballCollidesEnergySphere(ball, sphere){ //some yucky linear algebra, ju
     ball.setVelocity(bounceVector.x, bounceVector.y);
 }
 
-function spawnEnergySphere(player, color){
-    if(player.body.blocked.down){
-        return;
-    }
-    let center = player.getCenter();
-    if(!player.energySphere){
-        player.energySphere = energySpheres.create(center.x, center.y, "energysphere");
-        player.energySphere.body.setCircle(player.energySphere.width/2);
-        player.energySphere.setScale(4.5);
-        if(color === "red"){
-            player.energySphere.setTintFill(0xff0000);
-        }
-        else{
-            player.energySphere.setTintFill(0x0000ff)
-        }
-    }
-    else{
-        player.energySphere.setPosition(center.x, center.y).refreshBody();
-    }
-}
-
-function onPlayerAction(scene){
-    if (cursors.up.isDown)
-    {
-        var playerCenter = rightPlayer.getCenter();
-        var ballCenter = ball.getCenter();
-        rightPlayer.setVelocityY(-550);
-        if(Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, ballCenter.x, ballCenter.y) <= (rightPlayer.width/2 + ball.width/2) + 2 && rightPlayer.body.blocked.down ){
-            ball.setVelocityY(-550);
-        }
-    }
-    if (cursors.down.isDown)
-    {
-        rightPlayer.setVelocityY(400);
-    }
-    if(cursors.left.isDown && !cursors.up.isDown){
-        if(rightPlayer.body.blocked.down){
-            rightDashing = true;
-            rightPlayer.setVelocityX(-1000);
-            scene.time.addEvent({
-                delay:200,
-                callback: () => {
-                    rightDashing = false;
-                }
-            })
-        }
-    }
-    if(cursors.right.isDown && !cursors.up.isDown){
-        if(rightPlayer.body.blocked.down){
-            rightDashing = true;
-            rightPlayer.setVelocityX(1000);
-            scene.time.addEvent({
-                delay:200,
-                callback: () => {
-                    rightDashing = false;
-                }
-            })
-        }
-    }
-    if (S.isDown)
-    {
-        leftPlayer.setVelocityY(400);
-    }
-    if (W.isDown)
-    {
-        var playerCenter = leftPlayer.getCenter();
-        var ballCenter = ball.getCenter();
-        leftPlayer.setVelocityY(-550);
-        if(Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, ballCenter.x, ballCenter.y) <= (leftPlayer.width/2 + ball.width/2) + 2 && leftPlayer.body.blocked.down ){
-            ball.setVelocityY(-550);
-        }
-    }
-    if(A.isDown && !W.isDown){
-        if(leftPlayer.body.blocked.down){
-            leftDashing = true;
-            leftPlayer.setVelocityX(-1000);
-            scene.time.addEvent({
-                delay:200,
-                callback: () => {
-                    leftDashing = false;
-                }
-            })
-        }
-    }
-    if(D.isDown && !W.isDown){
-        if(leftPlayer.body.blocked.down){
-            leftDashing = true;
-            leftPlayer.setVelocityX(1000);
-            scene.time.addEvent({
-                delay:200,
-                callback: () => {
-                    leftDashing = false;
-                }
-            })
-        }
-    }
-}
-
 function update ()
 {
-    if (gameOver)
-    {
-        return;
-    }
-    if(!rightDashing){
-        if (cursors.left.isDown)
-        {
-            rightPlayer.setVelocityX(-330);
-
-            rightPlayer.anims.play('left', true);
-        }
-        else if (cursors.right.isDown)
-        {
-            rightPlayer.setVelocityX(330);
-
-            rightPlayer.anims.play('right', true);
-        }
-        else
-        {
-            rightPlayer.setVelocityX(0);
-            rightPlayer.anims.play('turn');
-        }
-    }
-    if(!leftDashing){
-        if (A.isDown)
-        {
-            leftPlayer.setVelocityX(-330);
-            leftPlayer.anims.play('left', true);
-        }
-        else if (D.isDown)
-        {
-            leftPlayer.setVelocityX(330);
-
-            leftPlayer.anims.play('right', true);
-        }
-        else
-        {
-            leftPlayer.setVelocityX(0);
-            leftPlayer.anims.play('turn');
-        }
-    }
-    this.physics.world.wrap(leftPlayer);
-    this.physics.world.wrap(rightPlayer);
     this.physics.world.wrap(ball);
-
+    bluePlayer.update();
+    redPlayer.update();
     //slowmo when ball is near goal, has 20s cooldown
     let ballCenter = ball.getCenter();
-    let leftGoalCenter = leftGoal.getCenter();
-    let rightGoalCenter = rightGoal.getCenter();
-    if((Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, leftGoalCenter.x, leftGoalCenter.y) < 200 || Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, rightGoalCenter.x, rightGoalCenter.y) < 200) && ballCenter.y < leftGoalCenter.y){
+    let blueGoalCenter = blueGoal.getCenter();
+    let redGoalCenter = redGoal.getCenter();
+    if((Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, blueGoalCenter.x, blueGoalCenter.y) < 200 || Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, redGoalCenter.x, redGoalCenter.y) < 200) && ballCenter.y < blueGoalCenter.y){
         if(slowmoCooldown ? slowmoCooldown.getRemaining() === 0 : true){
             this.physics.world.timeScale = 2; 
             this.time.timeScale = 2;
@@ -426,5 +257,136 @@ function update ()
     else if(!scored){
         this.physics.world.timeScale = 1; 
         this.time.timeScale = 1;
+    }
+}
+
+class Player{
+    constructor(scene, color, startX, startY, sprite, actionInput, upInput, rightInput, downInput, leftInput){
+        this.scene = scene;
+        this.color = color;
+        this.startX = startX;
+        this.startY = startY;
+        this.sprite = sprite;
+        this.actionInput = actionInput;
+        this.upInput = upInput;
+        this.rightInput = rightInput;
+        this.downInput = downInput;
+        this.leftInput = leftInput;
+        this.dashing = false;
+    }
+
+    create(){
+        this.gameObject = this.scene.physics.add.sprite(this.startX, this.startY, this.sprite);
+        this.gameObject.setCollideWorldBounds(false);
+        this.up = this.scene.input.keyboard.addKey(this.upInput);
+        this.right = this.scene.input.keyboard.addKey(this.rightInput);
+        this.down = this.scene.input.keyboard.addKey(this.downInput);
+        this.left = this.scene.input.keyboard.addKey(this.leftInput);
+        this.action = this.scene.input.keyboard.addKey(this.actionInput);
+        this.action.on('down', () => { this.onAction(); });
+    }
+
+    update(){
+        if(!this.dashing){
+            if (this.left.isDown)
+            {
+                this.gameObject.setVelocityX(-330);
+    
+                this.gameObject.anims.play('left', true);
+            }
+            else if (this.right.isDown)
+            {
+                this.gameObject.setVelocityX(330);
+    
+                this.gameObject.anims.play('right', true);
+            }
+            else
+            {
+                this.gameObject.setVelocityX(0);
+                this.gameObject.anims.play('turn');
+            }
+        }
+        this.scene.physics.world.wrap(this.gameObject);
+    }
+
+    onAction(){
+        if (this.up.isDown)
+        {
+            var playerCenter = this.gameObject.getCenter();
+            var ballCenter = ball.getCenter();
+            this.gameObject.setVelocityY(-550);
+            if(Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, ballCenter.x, ballCenter.y) <= (this.gameObject.width/2 + ball.width/2) + 2 && this.gameObject.body.blocked.down ){
+                ball.setVelocityY(-550);
+            }
+        }
+        if (this.down.isDown)
+        {
+            this.gameObject.setVelocityY(400);
+        }
+        if(this.left.isDown && !this.up.isDown){
+            if(this.gameObject.body.blocked.down){
+                this.dashing = true;
+                this.gameObject.setVelocityX(-1000);
+                this.scene.time.addEvent({
+                    delay: 200,
+                    callback: () => {
+                        this.dashing = false;
+                    }
+                })
+            }
+        }
+        if(this.right.isDown && !this.up.isDown){
+            if(this.gameObject.body.blocked.down){
+                this.dashing = true;
+                this.gameObject.setVelocityX(1000);
+                this.scene.time.addEvent({
+                    delay:200,
+                    callback: () => {
+                        this.dashing = false;
+                    }
+                })
+            }
+        }
+        if(this.gameObject.body.blocked.down){
+            return;
+        }
+        let center = this.gameObject.getCenter();
+        if(!this.energySphere){
+            this.energySphere = energySpheres.create(center.x, center.y, "energysphere");
+            this.energySphere.body.setCircle(this.energySphere.width/2);
+            this.energySphere.setScale(4.5);
+            this.energySphere.setTintFill(this.color);
+        }
+        else{
+            this.energySphere.setPosition(center.x, center.y).refreshBody();
+        }
+    }
+
+    reset(){
+        this.gameObject.setPosition(this.startX, this.startY);   
+        this.energySphere?.setPosition(-100, -100).refreshBody();
+        this.gameObject.setVelocity(0);
+    }
+}
+
+class Arena{
+    constructor(scene, tileset, tilemap, tilesetKey, platformLayerKey){
+        this.scene = scene;
+        this.tileset = tileset;
+        this.tilemap = tilemap;
+        this.tilesetKey = tilesetKey;
+        this.platformLayerKey = platformLayerKey;
+    }
+
+    preload(){
+        this.scene.load.image('tiles', this.tileset);
+        this.scene.load.tilemapTiledJSON('map', this.tilemap);
+    }
+
+    create(){
+        const map = this.scene.make.tilemap({key: "map"});
+        const tileset = map.addTilesetImage(this.tilesetKey, 'tiles');
+        this.platforms = map.createLayer(this.platformLayerKey, tileset, 0, 0);
+        this.platforms.setCollisionByExclusion(-1, true);
     }
 }
