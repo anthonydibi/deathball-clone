@@ -1,5 +1,4 @@
 
-
 var config = {
     type: Phaser.AUTO,
     width: 1280,
@@ -68,17 +67,6 @@ function create ()
     blueScore = this.add.text(24, 220, '3', { font: "40px Arial" });
     redScore = this.add.text(1236, 220, '3', { font: "40px Arial"});
 
-    //  Here we create the ground.
-    //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
-
-    //  Now let's create some ledges
-
-    // The player and its settings
-
-    //  Player physics properties. Give the little guy a slight bounce.
-
-
-    //  Our player animations, turning, walking left and walking right.
     this.anims.create({
         key: 'left',
         frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
@@ -104,17 +92,20 @@ function create ()
 
     let balls = this.physics.add.group();
 
-    ball = balls.create(this.cameras.main.centerX, this.cameras.main.centerY, "ball");
+    ball = balls.create(this.cameras.main.centerX, 620, "ball");
     ball.body.setCircle(ball.body.width/2);
     ball.setMaxVelocity(800);
+    ball.body.setAllowGravity(false);
 
-    ball.setBounce(.5, .7);
+    ball.setBounce(.6, .6);
 
     ball.setScale(.3);
 
     ball.setMass(.5);
 
-    this.physics.add.collider(balls, arena.platforms);
+    this.physics.add.collider(balls, arena.platforms, (ball, tile) => {
+        ball.setVelocityX(ball.body.velocity.x * .985);
+    });
     this.physics.add.collider(bluePlayer.gameObject, balls);
     this.physics.add.collider(redPlayer.gameObject, balls);
     this.physics.add.collider(bluePlayer.gameObject, redPlayer.gameObject);
@@ -129,12 +120,40 @@ function create ()
     countdownRound(this);
 }
 
+function update ()
+{
+    this.physics.world.wrap(ball);
+    bluePlayer.update();
+    redPlayer.update();
+    //slowmo when ball is near goal, has 20s cooldown
+    let ballCenter = ball.getCenter();
+    let blueGoalCenter = blueGoal.getCenter();
+    let redGoalCenter = redGoal.getCenter();
+    let blueGoalDist = Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, blueGoalCenter.x, blueGoalCenter.y);
+    let redGoalDist = Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, redGoalCenter.x, redGoalCenter.y);
+    if((blueGoalDist < 200 || redGoalDist < 200) && ballCenter.y < blueGoalCenter.y && (blueGoalDist < redGoalDist ? ball.body.velocity.x > 0 : ball.body.velocity.x < 0)){
+        if(slowmoCooldown ? slowmoCooldown.getRemaining() === 0 : true){
+            this.physics.world.timeScale = 4; 
+            this.time.timeScale = 4;
+            slowmoCooldown = this.time.addEvent({
+                delay: 20000,
+                callback: () => {
+                }
+            })
+        }
+    }
+    else if(!scored){
+        this.physics.world.timeScale = 1; 
+        this.time.timeScale = 1;
+    }
+}
+
 function goal(scene, side){
     scored = true;
     blueGoalCollider.active = false;
     redGoalCollider.active = false;
-    scene.physics.world.timeScale = 2; 
-    scene.time.timeScale = 2;
+    scene.physics.world.timeScale = 4; 
+    scene.time.timeScale = 4;
     if(side === "left"){
         blueScore.setText(parseInt(blueScore.text) - 1);
     }
@@ -147,13 +166,13 @@ function goal(scene, side){
         var gameOverText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, 'GAME OVER', { font: "100px Arial" });
         gameOverText.setOrigin(0.5);
         var gameOverTextTimer = scene.time.addEvent({
-            delay:6000,
+            delay:15000,
             callback: () => {
                 gameOverText.destroy();
                 var winnerText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, (blueWin ? "BLUE" : "") + (redWin ? "RED" : "") + " WINS", { font: "100px Arial" });
                 winnerText.setOrigin(0.5);
                 var winnerTextTimer = scene.time.addEvent({
-                    delay: 6000,
+                    delay: 15000,
                     callback: () => {
                         winnerText.destroy();
                         blueScore.setText("3");
@@ -171,10 +190,10 @@ function goal(scene, side){
     }
     else{
         var resetTimer = scene.time.addEvent({
-            delay: 10000,                
+            delay: 50000,                
             callback: () => reset(scene),
             loop: false,
-            timeScale: 2
+            timeScale: 4
         });
     }
 }
@@ -187,8 +206,9 @@ function reset(scene){
     scene.time.timeScale = 1;
     bluePlayer.reset();
     redPlayer.reset(); 
-    ball.setPosition(scene.cameras.main.centerX, scene.cameras.main.centerY);
+    ball.setPosition(scene.cameras.main.centerX, 620);
     ball.setVelocity(0);
+    ball.body.setAllowGravity(false);
     countdownRound(scene);
 }
 
@@ -210,6 +230,7 @@ function countdownRound(scene){
                 countdownText.destroy();
                 timer.remove();
                 scene.input.keyboard.manager.enabled = true;
+                ball.body.setAllowGravity(true);
             }
         },
     });
@@ -230,34 +251,8 @@ function ballCollidesEnergySphere(ball, sphere){ //some yucky linear algebra, ju
     let bounceVector = new Phaser.Math.Vector2(1, 0);
     bounceVector.setAngle(angle);
     bounceVector.scale(-1);
-    bounceVector.scale(500 + incomingSpeed/3);
+    bounceVector.scale(500 + incomingSpeed/4);
     ball.setVelocity(bounceVector.x, bounceVector.y);
-}
-
-function update ()
-{
-    this.physics.world.wrap(ball);
-    bluePlayer.update();
-    redPlayer.update();
-    //slowmo when ball is near goal, has 20s cooldown
-    let ballCenter = ball.getCenter();
-    let blueGoalCenter = blueGoal.getCenter();
-    let redGoalCenter = redGoal.getCenter();
-    if((Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, blueGoalCenter.x, blueGoalCenter.y) < 200 || Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, redGoalCenter.x, redGoalCenter.y) < 200) && ballCenter.y < blueGoalCenter.y){
-        if(slowmoCooldown ? slowmoCooldown.getRemaining() === 0 : true){
-            this.physics.world.timeScale = 2; 
-            this.time.timeScale = 2;
-            slowmoCooldown = this.time.addEvent({
-                delay: 20000,
-                callback: () => {
-                }
-            })
-        }
-    }
-    else if(!scored){
-        this.physics.world.timeScale = 1; 
-        this.time.timeScale = 1;
-    }
 }
 
 class Player{
@@ -273,6 +268,7 @@ class Player{
         this.downInput = downInput;
         this.leftInput = leftInput;
         this.dashing = false;
+        this.inputVector = new Phaser.Math.Vector2(0, 0);
     }
 
     create(){
@@ -287,46 +283,36 @@ class Player{
     }
 
     update(){
-        if(!this.dashing){
-            if (this.left.isDown)
-            {
-                this.gameObject.setVelocityX(-330);
-    
-                this.gameObject.anims.play('left', true);
-            }
-            else if (this.right.isDown)
-            {
-                this.gameObject.setVelocityX(330);
-    
-                this.gameObject.anims.play('right', true);
-            }
-            else
-            {
-                this.gameObject.setVelocityX(0);
-                this.gameObject.anims.play('turn');
-            }
+        var right, left = 0;
+        right = this.right.isDown ? 1 : 0;
+        left = this.left.isDown ? 1 : 0;
+        var velocityX = (right - left) * 300;
+        if((((this.gameObject.body.velocity.x < 0) != (velocityX < 0)) || Math.abs(this.gameObject.body.velocity.x) <= Math.abs(velocityX)) || this.gameObject.body.velocity.x == 0 || velocityX == 0){
+            this.gameObject.setVelocityX(velocityX);
         }
         this.scene.physics.world.wrap(this.gameObject);
     }
 
     onAction(){
+        var up, right, down, left = 0;
+        up = this.up.isDown ? 1 : 0;
+        right = this.right.isDown ? 1 : 0;
+        down = this.down.isDown ? 1 : 0;
+        left = this.left.isDown ? 1 : 0;
+        var velocity = new Phaser.Math.Vector2(right - left, down - up);
+        velocity.scale(500);
         if (this.up.isDown)
         {
             var playerCenter = this.gameObject.getCenter();
             var ballCenter = ball.getCenter();
-            this.gameObject.setVelocityY(-550);
             if(Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, ballCenter.x, ballCenter.y) <= (this.gameObject.width/2 + ball.width/2) + 2 && this.gameObject.body.blocked.down ){
                 ball.setVelocityY(-550);
             }
         }
-        if (this.down.isDown)
-        {
-            this.gameObject.setVelocityY(400);
-        }
         if(this.left.isDown && !this.up.isDown){
             if(this.gameObject.body.blocked.down){
+                velocity.scale(1.5);
                 this.dashing = true;
-                this.gameObject.setVelocityX(-1000);
                 this.scene.time.addEvent({
                     delay: 200,
                     callback: () => {
@@ -337,6 +323,7 @@ class Player{
         }
         if(this.right.isDown && !this.up.isDown){
             if(this.gameObject.body.blocked.down){
+                velocity.scale(1.5);
                 this.dashing = true;
                 this.gameObject.setVelocityX(1000);
                 this.scene.time.addEvent({
@@ -347,6 +334,7 @@ class Player{
                 })
             }
         }
+        this.gameObject.setVelocity(velocity.x, velocity.y);
         if(this.gameObject.body.blocked.down){
             return;
         }
