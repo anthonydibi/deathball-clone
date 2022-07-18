@@ -58,6 +58,8 @@ function create ()
     arena.create();
     bluePlayer.create();
     redPlayer.create();
+    bluePlayer.movementEnabled = false;
+    redPlayer.movementEnabled = false;
     blueGoal = new Phaser.GameObjects.Rectangle(this, 16, 440, 32, 144, 0xff0000);
     redGoal = new Phaser.GameObjects.Rectangle(this, 1268, 440, 32, 144, 0x0000ff);
     var goals = this.physics.add.staticGroup();
@@ -119,7 +121,16 @@ function create ()
     var showControlsAction = this.input.keyboard.addKey("SPACE");
     showControlsAction.on('down', () => { controlsText.setVisible(!controlsText.visible); });
     controlsText.setOrigin(0.5);
-    countdownRound(this);
+
+    bluePlayer.enterName().then(text1 => {
+        redPlayer.enterName().then(text2 => {
+            text1.visible = false;
+            text2.visible = false;
+            redPlayer.movementEnabled = true;
+            bluePlayer.movementEnabled = true;
+            countdownRound(this);
+        });
+    });
 }
 
 function update ()
@@ -165,6 +176,14 @@ function goal(scene, side){
     let blueWin = parseInt(redScore.text) === 0;
     let redWin = parseInt(blueScore.text) === 0;
     if(blueWin || redWin){
+        const api = new ApiManager('https://dibiaggdotio.herokuapp.com');
+        console.log(api.url);
+        if(blueWin){
+            api.uploadGame(bluePlayer.name, redPlayer.name, parseInt(blueScore.text), parseInt(redScore.text));
+        }
+        else if(redWin){
+            api.uploadGame(redPlayer.name, bluePlayer.name, parseInt(redScore.text), parseInt(blueScore.text));
+        }
         var gameOverText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, 'GAME OVER', { font: "100px Arial" });
         gameOverText.setOrigin(0.5);
         var gameOverTextTimer = scene.time.addEvent({
@@ -271,6 +290,7 @@ class Player{
         this.leftInput = leftInput;
         this.dashing = false;
         this.inputVector = new Phaser.Math.Vector2(0, 0);
+        this.movementEnabled = true;
     }
 
     create(){
@@ -285,6 +305,7 @@ class Player{
     }
 
     update(){
+        if(!this.movementEnabled) return;
         var up, right, down, left = 0;
         up = this.up.isDown ? 1 : 0;
         right = this.right.isDown ? 1 : 0;
@@ -293,7 +314,10 @@ class Player{
         var velocityX = (right - left) * 300;
         if(!this.dashing || (this.gameObject.body.velocity.x < 0) != (right - left < 0) || this.gameObject.body.velocity.x == 0){
             this.gameObject.setVelocityX(velocityX);
-            this.dashing = false;
+            if(this.dashing){
+                this.dashing = false;
+                this.gameObject.setVelocityY(200);
+            }
         }
         if(up == 0 && right == 0 && down == 0 && left == 0){
             this.gameObject.setVelocityX(0);
@@ -302,7 +326,32 @@ class Player{
         this.scene.physics.world.wrap(this.gameObject);
     }
 
+    enterName(){
+        return new Promise((resolve, reject) => {
+            this.nameEntered = false;
+            let nameEntry = this.scene.add.text(this.startX, this.startY, '', { font: '20px Courier', fill: '#ffffff' });
+            nameEntry.setOrigin(0.5);
+            (function(nameText, scene) {
+                scene.input.keyboard.on("keydown", function() {
+                    if (event.keyCode === 8 && nameText.text.length > 0)
+                {
+                    nameText.text = nameText.text.substr(0, nameText.text.length - 1);
+                }
+                else if (event.keyCode === 32 || (event.keyCode >= 48 && event.keyCode < 90 && nameText.text.length < 5))
+                {
+                    nameText.text += event.key.toUpperCase();
+                }
+                else if (event.keyCode === 13){
+                    this.name = nameText.text;
+                    resolve(nameText);
+                }
+                });
+            })(nameEntry, this.scene)
+        })
+    }
+
     onAction(){
+        if(!this.movementEnabled) return;
         var playerCenter = this.gameObject.getCenter();
         var ballCenter = ball.getCenter();
         if(Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, ballCenter.x, ballCenter.y) <= (this.gameObject.width/2 + ball.width/2) + 2 && this.gameObject.body.blocked.down ){ // jump the ball if player is on ground and near it
@@ -328,7 +377,7 @@ class Player{
         if(!this.energySphere){
             this.energySphere = energySpheres.create(playerCenter.x, playerCenter.y, "energysphere");
             this.energySphere.body.setCircle(this.energySphere.width/2);
-            this.energySphere.setScale(4.5);
+            this.energySphere.setScale(5);
             this.energySphere.setTintFill(this.color);
         }
         else{
@@ -362,5 +411,28 @@ class Arena{
         const tileset = map.addTilesetImage(this.tilesetKey, 'tiles');
         this.platforms = map.createLayer(this.platformLayerKey, tileset, 0, 0);
         this.platforms.setCollisionByExclusion(-1, true);
+    }
+}
+
+class ApiManager{
+    constructor(API_URL){
+        this.API_URL = API_URL;
+    }
+
+    uploadGame(winner, loser, winnerscore, loserscore){
+        const data = {
+            winner: winner,
+            loser: loser,
+            winnerscore: winnerscore,
+            loserscore: loserscore
+        }
+        fetch(this.API_URL + '/deathball/games', {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            mode: 'cors'
+        });
     }
 }
