@@ -1,4 +1,6 @@
 
+const API_URL = 'https://dibiaggdotio.herokuapp.com';
+
 var config = {
     type: Phaser.AUTO,
     width: 1280,
@@ -283,70 +285,54 @@ class Player{
     }
 
     update(){
-        var right, left = 0;
-        right = this.right.isDown ? 1 : 0;
-        left = this.left.isDown ? 1 : 0;
-        var velocityX = (right - left) * 300;
-        if((((this.gameObject.body.velocity.x < 0) != (velocityX < 0)) || Math.abs(this.gameObject.body.velocity.x) <= Math.abs(velocityX)) || this.gameObject.body.velocity.x == 0 || velocityX == 0){
-            this.gameObject.setVelocityX(velocityX);
-        }
-        this.scene.physics.world.wrap(this.gameObject);
-    }
-
-    onAction(){
         var up, right, down, left = 0;
         up = this.up.isDown ? 1 : 0;
         right = this.right.isDown ? 1 : 0;
         down = this.down.isDown ? 1 : 0;
         left = this.left.isDown ? 1 : 0;
-        var velocity = new Phaser.Math.Vector2(right - left, down - up);
-        velocity.scale(500);
-        if (this.up.isDown)
-        {
-            var playerCenter = this.gameObject.getCenter();
-            var ballCenter = ball.getCenter();
-            if(Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, ballCenter.x, ballCenter.y) <= (this.gameObject.width/2 + ball.width/2) + 2 && this.gameObject.body.blocked.down ){
-                ball.setVelocityY(-550);
-            }
+        var velocityX = (right - left) * 300;
+        if(!this.dashing || (this.gameObject.body.velocity.x < 0) != (right - left < 0) || this.gameObject.body.velocity.x == 0){
+            this.gameObject.setVelocityX(velocityX);
+            this.dashing = false;
         }
-        if(this.left.isDown && !this.up.isDown){
-            if(this.gameObject.body.blocked.down){
-                velocity.scale(1.5);
-                this.dashing = true;
-                this.scene.time.addEvent({
-                    delay: 200,
-                    callback: () => {
-                        this.dashing = false;
-                    }
-                })
-            }
+        if(up == 0 && right == 0 && down == 0 && left == 0){
+            this.gameObject.setVelocityX(0);
+            this.dashing = false;
         }
-        if(this.right.isDown && !this.up.isDown){
-            if(this.gameObject.body.blocked.down){
-                velocity.scale(1.5);
-                this.dashing = true;
-                this.gameObject.setVelocityX(1000);
-                this.scene.time.addEvent({
-                    delay:200,
-                    callback: () => {
-                        this.dashing = false;
-                    }
-                })
-            }
+        this.scene.physics.world.wrap(this.gameObject);
+    }
+
+    onAction(){
+        var playerCenter = this.gameObject.getCenter();
+        var ballCenter = ball.getCenter();
+        if(Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, ballCenter.x, ballCenter.y) <= (this.gameObject.width/2 + ball.width/2) + 2 && this.gameObject.body.blocked.down ){ // jump the ball if player is on ground and near it
+            ball.setVelocityY(-550);
         }
-        this.gameObject.setVelocity(velocity.x, velocity.y);
+        if(!this.down.isDown){
+            this.gameObject.setVelocityY(-550);
+        }
+        else if(this.left.isDown && this.down.isDown && this.gameObject.body.blocked.down){
+            this.gameObject.setVelocityX(-800);
+            this.dashing = true;
+        }
+        else if(this.right.isDown && this.down.isDown && this.gameObject.body.blocked.down){
+            this.gameObject.setVelocityX(800);
+            this.dashing = true;
+        }
+        else if(this.down.isDown && !this.gameObject.body.blocked.down){
+            this.gameObject.setVelocityY(400);
+        }
         if(this.gameObject.body.blocked.down){
             return;
         }
-        let center = this.gameObject.getCenter();
         if(!this.energySphere){
-            this.energySphere = energySpheres.create(center.x, center.y, "energysphere");
+            this.energySphere = energySpheres.create(playerCenter.x, playerCenter.y, "energysphere");
             this.energySphere.body.setCircle(this.energySphere.width/2);
             this.energySphere.setScale(4.5);
             this.energySphere.setTintFill(this.color);
         }
         else{
-            this.energySphere.setPosition(center.x, center.y).refreshBody();
+            this.energySphere.setPosition(playerCenter.x, playerCenter.y).refreshBody();
         }
     }
 
