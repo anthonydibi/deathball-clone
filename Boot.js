@@ -177,7 +177,6 @@ function goal(scene, side){
     let redWin = parseInt(blueScore.text) === 0;
     if(blueWin || redWin){
         const api = new ApiManager('https://dibiaggdotio.herokuapp.com');
-        console.log(api.url);
         if(blueWin){
             api.uploadGame(bluePlayer.name, redPlayer.name, parseInt(blueScore.text), parseInt(redScore.text));
         }
@@ -190,7 +189,7 @@ function goal(scene, side){
             delay:15000,
             callback: () => {
                 gameOverText.destroy();
-                var winnerText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, (blueWin ? "BLUE" : "") + (redWin ? "RED" : "") + " WINS", { font: "100px Arial" });
+                var winnerText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, (blueWin ? bluePlayer.name : "") + (redWin ? redPlayer.name : "") + " WINS", { font: "100px Arial" });
                 winnerText.setOrigin(0.5);
                 var winnerTextTimer = scene.time.addEvent({
                     delay: 15000,
@@ -331,7 +330,7 @@ class Player{
             this.nameEntered = false;
             let nameEntry = this.scene.add.text(this.startX, this.startY, '', { font: '20px Courier', fill: '#ffffff' });
             nameEntry.setOrigin(0.5);
-            (function(nameText, scene) {
+            (function(nameText, scene, context) {
                 scene.input.keyboard.on("keydown", function() {
                     if (event.keyCode === 8 && nameText.text.length > 0)
                 {
@@ -342,11 +341,11 @@ class Player{
                     nameText.text += event.key.toUpperCase();
                 }
                 else if (event.keyCode === 13){
-                    this.name = nameText.text;
+                    context.name = nameText.text;
                     resolve(nameText);
                 }
                 });
-            })(nameEntry, this.scene)
+            })(nameEntry, this.scene, this)
         })
     }
 
