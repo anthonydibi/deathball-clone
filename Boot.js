@@ -313,9 +313,9 @@ class Player{
         var velocityX = (right - left) * 300;
         if(!this.dashing || (this.gameObject.body.velocity.x < 0) != (right - left < 0) || this.gameObject.body.velocity.x == 0){
             this.gameObject.setVelocityX(velocityX);
-            if(this.dashing){
-                this.dashing = false;
-                this.gameObject.setVelocityY(200);
+            this.dashing = false;
+            if(this.dashing && this.gameObject.body.blocked.down){
+                this.gameObject.setVelocityY(-300);
             }
         }
         if(up == 0 && right == 0 && down == 0 && left == 0){
