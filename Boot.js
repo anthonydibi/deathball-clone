@@ -105,7 +105,7 @@ function create ()
 
     ball.setScale(.3);
 
-    ball.setMass(.5);
+    ball.setMass(.7);
 
     this.physics.add.collider(balls, arena.platforms, (ball, tile) => {
         ball.setVelocityX(ball.body.velocity.x * .985);
@@ -313,6 +313,15 @@ class Player{
         var velocityX = (right - left) * 300;
         if(!this.dashing || (this.gameObject.body.velocity.x < 0) != (right - left < 0) || this.gameObject.body.velocity.x == 0){
             this.gameObject.setVelocityX(velocityX);
+            if(velocityX > 0){
+                this.gameObject.anims.play("right");
+            }
+            else if(velocityX < 0){
+                this.gameObject.anims.play("left");
+            }
+            else{
+                this.gameObject.anims.play("turn");
+            }
             this.dashing = false;
             if(this.dashing && this.gameObject.body.blocked.down){
                 this.gameObject.setVelocityY(-300);
@@ -332,7 +341,7 @@ class Player{
             nameEntry.setOrigin(0.5);
             (function(nameText, scene, context) {
                 scene.input.keyboard.on("keydown", function() {
-                    if (event.keyCode === 8 && nameText.text.length > 0)
+                if (event.keyCode === 8 && nameText.text.length > 0)
                 {
                     nameText.text = nameText.text.substr(0, nameText.text.length - 1);
                 }
@@ -357,7 +366,7 @@ class Player{
             ball.setVelocityY(-550);
         }
         if(!this.down.isDown){
-            this.gameObject.setVelocityY(-550);
+            this.gameObject.setVelocityY(-620);
         }
         else if(this.left.isDown && this.down.isDown && this.gameObject.body.blocked.down){
             this.gameObject.setVelocityX(-800);
@@ -368,7 +377,7 @@ class Player{
             this.dashing = true;
         }
         else if(this.down.isDown && !this.gameObject.body.blocked.down){
-            this.gameObject.setVelocityY(400);
+            this.gameObject.setVelocityY(500);
         }
         if(this.gameObject.body.blocked.down){
             return;
