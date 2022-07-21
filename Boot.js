@@ -9,7 +9,7 @@ var config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 800 },
-            debug: true
+            debug: false
         }
     },
     scene: {
@@ -101,7 +101,7 @@ function create ()
     ball.setMaxVelocity(800);
     ball.body.setAllowGravity(false);
 
-    ball.setBounce(.5, .4);
+    ball.setBounce(.5, .5);
 
     ball.setScale(.45);
 
