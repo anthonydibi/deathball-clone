@@ -9,7 +9,7 @@ var config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 800 },
-            debug: false
+            debug: true
         }
     },
     scene: {
@@ -296,7 +296,8 @@ class Player{
     create(){
         this.gameObject = this.scene.physics.add.sprite(this.startX, this.startY, this.sprite);
         this.gameObject.setCollideWorldBounds(false);
-        this.gameObject.setScale(1.5);
+        this.gameObject.displayHeight = this.gameObject.displayWidth;
+        this.gameObject.setScale(1.47, 1);
         this.up = this.scene.input.keyboard.addKey(this.upInput);
         this.right = this.scene.input.keyboard.addKey(this.rightInput);
         this.down = this.scene.input.keyboard.addKey(this.downInput);
