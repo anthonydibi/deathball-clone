@@ -314,6 +314,9 @@ class Player{
         down = this.down.isDown ? 1 : 0;
         left = this.left.isDown ? 1 : 0;
         var velocityX = (right - left) * 450;
+        if(this.dashing && !this.down.isDown){
+            this.gameObject.setVelocityY(-200);
+        }
         if(!this.dashing || (this.gameObject.body.velocity.x < 0) != (right - left < 0) || this.gameObject.body.velocity.x == 0){
             this.gameObject.setVelocityX(velocityX);
             if(velocityX > 0){
@@ -326,9 +329,6 @@ class Player{
                 this.gameObject.anims.play("turn");
             }
             this.dashing = false;
-            if(this.dashing && this.gameObject.body.blocked.down){
-                this.gameObject.setVelocityY(-300);
-            }
         }
         if(up == 0 && right == 0 && down == 0 && left == 0){
             this.gameObject.setVelocityX(0);
@@ -372,11 +372,11 @@ class Player{
             this.gameObject.setVelocityY(-620);
         }
         else if(this.left.isDown && this.down.isDown && this.gameObject.body.blocked.down){
-            this.gameObject.setVelocityX(-800);
+            this.gameObject.setVelocityX(-900);
             this.dashing = true;
         }
         else if(this.right.isDown && this.down.isDown && this.gameObject.body.blocked.down){
-            this.gameObject.setVelocityX(800);
+            this.gameObject.setVelocityX(900);
             this.dashing = true;
         }
         else if(this.down.isDown && !this.gameObject.body.blocked.down){
