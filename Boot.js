@@ -1,4 +1,5 @@
 
+
 const API_URL = 'https://dibiaggdotio.herokuapp.com';
 
 var config = {
@@ -54,6 +55,7 @@ function preload ()
 function create ()
 {
     //  A simple background for our game
+    Phaser.Physics.Arcade.World.TILE_BIAS = 32;
     energySpheres = this.physics.add.staticGroup();
     arena.create();
     bluePlayer.create();
@@ -366,7 +368,7 @@ class Player{
         var playerCenter = this.gameObject.getCenter();
         var ballCenter = ball.getCenter();
         if(Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, ballCenter.x, ballCenter.y) <= (this.gameObject.width/2 + ball.width/2) + 2 && this.gameObject.body.blocked.down ){ // jump the ball if player is on ground and near it
-            ball.setVelocityY(-700);
+            ball.setVelocityY(ball.body.velocity.y - 700);
         }
         if(!this.down.isDown){
             this.gameObject.setVelocityY(-620);
