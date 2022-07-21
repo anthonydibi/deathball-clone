@@ -3,12 +3,12 @@ const API_URL = 'https://dibiaggdotio.herokuapp.com';
 
 var config = {
     type: Phaser.AUTO,
-    width: 1280,
-    height: 720,
+    width: 1920,
+    height: 1000,
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 1000 },
+            gravity: { y: 800 },
             debug: false
         }
     },
@@ -42,13 +42,13 @@ var game = new Phaser.Game(config);
 
 function preload ()
 {
-    arena = new Arena(this, 'assets/Tileset.png', 'assets/map1.json', 'dungeon', 'Tile Layer 1')
+    arena = new Arena(this, 'assets/Tileset.png', 'assets/map2.json', 'dungeon', 'Platforms')
     arena.preload();
     this.load.image('energysphere', 'assets/Energy_Ball.png');
     this.load.image('ball', 'assets/ball.png');
     this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
-    bluePlayer = new Player(this, 0x0000ff, 100, 600, "dude", "X", "W", "D", "S", "A");
-    redPlayer = new Player(this, 0xff0000, 1180, 600, "dude", "L", "UP", "RIGHT", "DOWN", "LEFT");
+    bluePlayer = new Player(this, 0x0000ff, 140, 920, "dude", "X", "W", "D", "S", "A");
+    redPlayer = new Player(this, 0xff0000, 1780, 920, "dude", "L", "UP", "RIGHT", "DOWN", "LEFT");
 }
 
 function create ()
@@ -60,16 +60,16 @@ function create ()
     redPlayer.create();
     bluePlayer.movementEnabled = false;
     redPlayer.movementEnabled = false;
-    blueGoal = new Phaser.GameObjects.Rectangle(this, 16, 440, 32, 144, 0xff0000);
-    redGoal = new Phaser.GameObjects.Rectangle(this, 1268, 440, 32, 144, 0x0000ff);
+    blueGoal = new Phaser.GameObjects.Rectangle(this, 16, 664, 32, 210, 0xff0000);
+    redGoal = new Phaser.GameObjects.Rectangle(this, 1904, 664, 32, 210, 0x0000ff);
     var goals = this.physics.add.staticGroup();
     this.add.existing(blueGoal);
     this.add.existing(redGoal);
     goals.add(blueGoal);
     goals.add(redGoal);
 
-    blueScore = this.add.text(24, 220, '3', { font: "40px Arial" });
-    redScore = this.add.text(1236, 220, '3', { font: "40px Arial"});
+    blueScore = this.add.text(44, 330, '3', { font: "40px Arial" });
+    redScore = this.add.text(1856, 330, '3', { font: "40px Arial"});
 
     this.anims.create({
         key: 'left',
@@ -96,16 +96,16 @@ function create ()
 
     let balls = this.physics.add.group();
 
-    ball = balls.create(this.cameras.main.centerX, 620, "ball");
+    ball = balls.create(this.cameras.main.centerX, 900, "ball");
     ball.body.setCircle(ball.body.width/2);
     ball.setMaxVelocity(800);
     ball.body.setAllowGravity(false);
 
-    ball.setBounce(.6, .6);
+    ball.setBounce(.5, .4);
 
-    ball.setScale(.3);
+    ball.setScale(.45);
 
-    ball.setMass(.7);
+    ball.setMass(1);
 
     this.physics.add.collider(balls, arena.platforms, (ball, tile) => {
         ball.setVelocityX(ball.body.velocity.x * .985);
@@ -126,6 +126,7 @@ function create ()
         redPlayer.enterName().then(text2 => {
             text1.visible = false;
             text2.visible = false;
+            controlsText.setVisible(false);
             redPlayer.movementEnabled = true;
             bluePlayer.movementEnabled = true;
             countdownRound(this);
@@ -226,7 +227,7 @@ function reset(scene){
     scene.time.timeScale = 1;
     bluePlayer.reset();
     redPlayer.reset(); 
-    ball.setPosition(scene.cameras.main.centerX, 620);
+    ball.setPosition(scene.cameras.main.centerX, 900);
     ball.setVelocity(0);
     ball.body.setAllowGravity(false);
     countdownRound(scene);
@@ -262,7 +263,7 @@ function ballCollidesEnergySphere(ball, sphere){ //some yucky linear algebra, ju
     let sphereCenter = sphere.getCenter();
     let angle = Phaser.Math.Angle.Between(ballCenter.x, ballCenter.y, sphereCenter.x, sphereCenter.y);
     var sphereToBall = new Phaser.Math.Vector2(1, 0);
-    sphereToBall.scale(sphere.width/2 + ball.width/2);
+    sphereToBall.scale(sphere.width/2 + ball.width/2 + 10);
     sphereToBall.setAngle(angle);
     sphereToBall.scale(-1);
     let newPos = new Phaser.Math.Vector2(sphereCenter.x + sphereToBall.x, sphereCenter.y + sphereToBall.y);
@@ -271,7 +272,7 @@ function ballCollidesEnergySphere(ball, sphere){ //some yucky linear algebra, ju
     let bounceVector = new Phaser.Math.Vector2(1, 0);
     bounceVector.setAngle(angle);
     bounceVector.scale(-1);
-    bounceVector.scale(500 + incomingSpeed/4);
+    bounceVector.scale(500 + incomingSpeed/3);
     ball.setVelocity(bounceVector.x, bounceVector.y);
 }
 
@@ -295,6 +296,7 @@ class Player{
     create(){
         this.gameObject = this.scene.physics.add.sprite(this.startX, this.startY, this.sprite);
         this.gameObject.setCollideWorldBounds(false);
+        this.gameObject.setScale(1.5);
         this.up = this.scene.input.keyboard.addKey(this.upInput);
         this.right = this.scene.input.keyboard.addKey(this.rightInput);
         this.down = this.scene.input.keyboard.addKey(this.downInput);
@@ -310,7 +312,7 @@ class Player{
         right = this.right.isDown ? 1 : 0;
         down = this.down.isDown ? 1 : 0;
         left = this.left.isDown ? 1 : 0;
-        var velocityX = (right - left) * 300;
+        var velocityX = (right - left) * 450;
         if(!this.dashing || (this.gameObject.body.velocity.x < 0) != (right - left < 0) || this.gameObject.body.velocity.x == 0){
             this.gameObject.setVelocityX(velocityX);
             if(velocityX > 0){
@@ -337,7 +339,7 @@ class Player{
     enterName(){
         return new Promise((resolve, reject) => {
             this.nameEntered = false;
-            let nameEntry = this.scene.add.text(this.startX, this.startY, '', { font: '20px Courier', fill: '#ffffff' });
+            let nameEntry = this.scene.add.text(this.startX, this.startY - 34, '', { font: '20px Courier', fill: '#ffffff' });
             nameEntry.setOrigin(0.5);
             (function(nameText, scene, context) {
                 scene.input.keyboard.on("keydown", function() {
@@ -363,7 +365,7 @@ class Player{
         var playerCenter = this.gameObject.getCenter();
         var ballCenter = ball.getCenter();
         if(Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, ballCenter.x, ballCenter.y) <= (this.gameObject.width/2 + ball.width/2) + 2 && this.gameObject.body.blocked.down ){ // jump the ball if player is on ground and near it
-            ball.setVelocityY(-550);
+            ball.setVelocityY(-700);
         }
         if(!this.down.isDown){
             this.gameObject.setVelocityY(-620);
@@ -385,7 +387,7 @@ class Player{
         if(!this.energySphere){
             this.energySphere = energySpheres.create(playerCenter.x, playerCenter.y, "energysphere");
             this.energySphere.body.setCircle(this.energySphere.width/2);
-            this.energySphere.setScale(5);
+            this.energySphere.setScale(6.5);
             this.energySphere.setTintFill(this.color);
         }
         else{
