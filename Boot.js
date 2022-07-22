@@ -9,7 +9,7 @@ var config = {
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 800 },
+            gravity: { y: 900 },
             debug: false
         }
     },
@@ -43,6 +43,8 @@ var game = new Phaser.Game(config);
 
 function preload ()
 {
+    this.physics.world.OVERLAP_BIAS = 36;
+    this.physics.world.TILE_BIAS = 64;
     arena = new Arena(this, 'assets/Tileset.png', 'assets/map2.json', 'dungeon', 'Platforms')
     arena.preload();
     this.load.image('energysphere', 'assets/Energy_Ball.png');
@@ -55,7 +57,6 @@ function preload ()
 function create ()
 {
     //  A simple background for our game
-    Phaser.Physics.Arcade.World.TILE_BIAS = 32;
     energySpheres = this.physics.add.staticGroup();
     arena.create();
     bluePlayer.create();
@@ -100,7 +101,7 @@ function create ()
 
     ball = balls.create(this.cameras.main.centerX, 900, "ball");
     ball.body.setCircle(ball.body.width/2);
-    ball.setMaxVelocity(800);
+    ball.setMaxVelocity(1000);
     ball.body.setAllowGravity(false);
 
     ball.setBounce(.5, .5);
@@ -147,14 +148,12 @@ function update ()
     let redGoalCenter = redGoal.getCenter();
     let blueGoalDist = Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, blueGoalCenter.x, blueGoalCenter.y);
     let redGoalDist = Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, redGoalCenter.x, redGoalCenter.y);
-    if((blueGoalDist < 200 || redGoalDist < 200) && ballCenter.y < blueGoalCenter.y && (blueGoalDist < redGoalDist ? ball.body.velocity.x > 0 : ball.body.velocity.x < 0)){
+    if((blueGoalDist < 400 || redGoalDist < 400) && ballCenter.y < (blueGoalCenter.y + blueGoal.height/2) /*&& (blueGoalDist < redGoalDist ? ball.body.velocity.x <= 0 : ball.body.velocity.x >= 0)*/){
         if(slowmoCooldown ? slowmoCooldown.getRemaining() === 0 : true){
             this.physics.world.timeScale = 4; 
             this.time.timeScale = 4;
             slowmoCooldown = this.time.addEvent({
-                delay: 20000,
-                callback: () => {
-                }
+                delay: 15000,
             })
         }
     }
@@ -292,6 +291,7 @@ class Player{
         this.leftInput = leftInput;
         this.dashing = false;
         this.inputVector = new Phaser.Math.Vector2(0, 0);
+        this.velocityScalar = 1;
         this.movementEnabled = true;
     }
 
@@ -309,28 +309,32 @@ class Player{
     }
 
     update(){
-        if(!this.movementEnabled) return;
+        console.log(this.velocityScalar);
         var up, right, down, left = 0;
         up = this.up.isDown ? 1 : 0;
         right = this.right.isDown ? 1 : 0;
         down = this.down.isDown ? 1 : 0;
         left = this.left.isDown ? 1 : 0;
-        var velocityX = (right - left) * 450;
-        if(this.dashing && !this.down.isDown){
-            this.gameObject.setVelocityY(-200);
-        }
+        if(!this.movementEnabled) return;
         if(!this.dashing || (this.gameObject.body.velocity.x < 0) != (right - left < 0) || this.gameObject.body.velocity.x == 0){
-            this.gameObject.setVelocityX(velocityX);
-            if(velocityX > 0){
-                this.gameObject.anims.play("right");
-            }
-            else if(velocityX < 0){
-                this.gameObject.anims.play("left");
-            }
-            else{
-                this.gameObject.anims.play("turn");
-            }
             this.dashing = false;
+            if(this.velocityScalar == 2){
+                this.velocityScalar = 1.5;
+            }
+        }
+        if(this.gameObject.body.blocked.down && !this.dashing){
+            this.velocityScalar = 1;
+        }
+        var velocityX = (right - left) * 450 * this.velocityScalar;
+        this.gameObject.setVelocityX(velocityX);
+        if(velocityX > 0){
+            this.gameObject.anims.play("right");
+        }
+        else if(velocityX < 0){
+            this.gameObject.anims.play("left");
+        }
+        else{
+            this.gameObject.anims.play("turn");
         }
         if(up == 0 && right == 0 && down == 0 && left == 0){
             this.gameObject.setVelocityX(0);
@@ -372,13 +376,17 @@ class Player{
         }
         if(!this.down.isDown){
             this.gameObject.setVelocityY(-620);
+            if(!this.gameObject.body.blocked.down){
+                this.velocityScalar = 1.3;
+                this.dashing = true;
+            }
         }
         else if(this.left.isDown && this.down.isDown && this.gameObject.body.blocked.down){
-            this.gameObject.setVelocityX(-900);
+            this.velocityScalar = 2;
             this.dashing = true;
         }
         else if(this.right.isDown && this.down.isDown && this.gameObject.body.blocked.down){
-            this.gameObject.setVelocityX(900);
+            this.velocityScalar = 2;
             this.dashing = true;
         }
         else if(this.down.isDown && !this.gameObject.body.blocked.down){
@@ -424,6 +432,7 @@ class Arena{
         const tileset = map.addTilesetImage(this.tilesetKey, 'tiles');
         this.platforms = map.createLayer(this.platformLayerKey, tileset, 0, 0);
         this.platforms.setCollisionByExclusion(-1, true);
+        
     }
 }
 
