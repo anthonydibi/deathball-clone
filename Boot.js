@@ -301,6 +301,7 @@ class Player{
         this.gameObject.setCollideWorldBounds(false);
         this.gameObject.displayHeight = this.gameObject.displayWidth;
         this.gameObject.setScale(1.47, 1);
+        this.gameObject.setMass(2);
         this.up = this.scene.input.keyboard.addKey(this.upInput);
         this.right = this.scene.input.keyboard.addKey(this.rightInput);
         this.down = this.scene.input.keyboard.addKey(this.downInput);
