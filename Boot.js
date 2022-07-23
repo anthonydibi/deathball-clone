@@ -311,7 +311,6 @@ class Player{
     }
 
     update(){
-        console.log(this.velocityScalar);
         var up, right, down, left = 0;
         up = this.up.isDown ? 1 : 0;
         right = this.right.isDown ? 1 : 0;
