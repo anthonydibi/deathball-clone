@@ -104,7 +104,7 @@ function create ()
     ball.setMaxVelocity(1000);
     ball.body.setAllowGravity(false);
 
-    ball.setBounce(.5, .5);
+    ball.setBounce(.8, .5);
 
     ball.setScale(.45);
 
@@ -264,7 +264,7 @@ function ballCollidesEnergySphere(ball, sphere){ //some yucky linear algebra, ju
     let sphereCenter = sphere.getCenter();
     let angle = Phaser.Math.Angle.Between(ballCenter.x, ballCenter.y, sphereCenter.x, sphereCenter.y);
     var sphereToBall = new Phaser.Math.Vector2(1, 0);
-    sphereToBall.scale(sphere.width/2 + ball.width/2 + 10);
+    sphereToBall.scale(sphere.body.width/2 + ball.body.width/2 + 2);
     sphereToBall.setAngle(angle);
     sphereToBall.scale(-1);
     let newPos = new Phaser.Math.Vector2(sphereCenter.x + sphereToBall.x, sphereCenter.y + sphereToBall.y);
@@ -275,6 +275,7 @@ function ballCollidesEnergySphere(ball, sphere){ //some yucky linear algebra, ju
     bounceVector.scale(-1);
     bounceVector.scale(500 + incomingSpeed/3);
     ball.setVelocity(bounceVector.x, bounceVector.y);
+    return false;
 }
 
 class Player{
@@ -300,6 +301,7 @@ class Player{
         this.gameObject.setCollideWorldBounds(false);
         this.gameObject.displayHeight = this.gameObject.displayWidth;
         this.gameObject.setScale(1.47, 1);
+        this.gameObject.setBounce(0, 0.1);
         this.up = this.scene.input.keyboard.addKey(this.upInput);
         this.right = this.scene.input.keyboard.addKey(this.rightInput);
         this.down = this.scene.input.keyboard.addKey(this.downInput);
@@ -309,7 +311,6 @@ class Player{
     }
 
     update(){
-        console.log(this.velocityScalar);
         var up, right, down, left = 0;
         up = this.up.isDown ? 1 : 0;
         right = this.right.isDown ? 1 : 0;
