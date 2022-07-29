@@ -298,9 +298,11 @@ class Player{
 
     create(){
         this.gameObject = this.scene.physics.add.sprite(this.startX, this.startY, this.sprite);
+        this.gameObject.setDepth(100);
         this.gameObject.setCollideWorldBounds(false);
         this.gameObject.displayHeight = this.gameObject.displayWidth;
         this.gameObject.setScale(1.47, 1);
+        this.gameObject.setMass(2);
         this.gameObject.setBounce(0, 0.1);
         this.up = this.scene.input.keyboard.addKey(this.upInput);
         this.right = this.scene.input.keyboard.addKey(this.rightInput);
