@@ -273,7 +273,7 @@ function ballCollidesEnergySphere(ball, sphere){ //some yucky linear algebra, ju
     let bounceVector = new Phaser.Math.Vector2(1, 0);
     bounceVector.setAngle(angle);
     bounceVector.scale(-1);
-    bounceVector.scale(500 + incomingSpeed/3);
+    bounceVector.scale(600 + incomingSpeed/3);
     ball.setVelocity(bounceVector.x, bounceVector.y);
     return false;
 }
