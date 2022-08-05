@@ -101,7 +101,7 @@ function create ()
 
     ball = balls.create(this.cameras.main.centerX, 900, "ball");
     ball.body.setCircle(ball.body.width/2);
-    ball.setMaxVelocity(1000);
+    ball.setMaxVelocity(1500);
     ball.body.setAllowGravity(false);
 
     ball.setBounce(.8, .5);
@@ -304,6 +304,7 @@ class Player{
         this.gameObject.setScale(1.47, 1);
         this.gameObject.setMass(2);
         this.gameObject.setBounce(0, 0.1);
+        this.gameObject.setPushable(false);
         this.up = this.scene.input.keyboard.addKey(this.upInput);
         this.right = this.scene.input.keyboard.addKey(this.rightInput);
         this.down = this.scene.input.keyboard.addKey(this.downInput);
