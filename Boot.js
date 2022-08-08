@@ -43,7 +43,6 @@ var game = new Phaser.Game(config);
 
 function preload ()
 {
-    this.physics.world.OVERLAP_BIAS = 16;
     this.physics.world.TILE_BIAS = 32;
     arena = new Arena(this, 'assets/Tileset.png', 'assets/map2.json', 'dungeon', 'Platforms')
     arena.preload();
@@ -101,10 +100,10 @@ function create ()
 
     ball = balls.create(this.cameras.main.centerX, 900, "ball");
     ball.body.setCircle(ball.body.width/2);
-    ball.setMaxVelocity(1500);
+    ball.setMaxVelocity(1000);
     ball.body.setAllowGravity(false);
 
-    ball.setBounce(.5, .5);
+    ball.setBounce(.7, .45);
 
     ball.setScale(.45);
 
@@ -301,9 +300,8 @@ class Player{
         this.gameObject = this.scene.physics.add.sprite(this.startX, this.startY, this.sprite);
         this.gameObject.setDepth(100);
         this.gameObject.setCollideWorldBounds(false);
-        this.gameObject.displayHeight = this.gameObject.displayWidth;
-        this.gameObject.setScale(1.47, 1);
-        this.gameObject.setMass(2);
+        this.gameObject.setScale(1.2, .8);
+        this.gameObject.setMass(1);
         this.gameObject.setBounce(0, 0.1);
         this.gameObject.setPushable(false);
         this.up = this.scene.input.keyboard.addKey(this.upInput);
