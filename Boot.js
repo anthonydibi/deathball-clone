@@ -43,8 +43,8 @@ var game = new Phaser.Game(config);
 
 function preload ()
 {
-    this.physics.world.OVERLAP_BIAS = 36;
-    this.physics.world.TILE_BIAS = 64;
+    this.physics.world.OVERLAP_BIAS = 16;
+    this.physics.world.TILE_BIAS = 32;
     arena = new Arena(this, 'assets/Tileset.png', 'assets/map2.json', 'dungeon', 'Platforms')
     arena.preload();
     this.load.image('energysphere', 'assets/Energy_Ball.png');
@@ -104,7 +104,7 @@ function create ()
     ball.setMaxVelocity(1500);
     ball.body.setAllowGravity(false);
 
-    ball.setBounce(.8, .5);
+    ball.setBounce(.5, .5);
 
     ball.setScale(.45);
 
@@ -115,20 +115,20 @@ function create ()
     });
     this.physics.add.collider(bluePlayer.gameObject, balls);
     this.physics.add.collider(redPlayer.gameObject, balls);
-    this.physics.add.collider(bluePlayer.gameObject, redPlayer.gameObject);
     blueGoalCollider = this.physics.add.collider(balls, blueGoal, () => goal(this, "left"));
     redGoalCollider = this.physics.add.collider(balls, redGoal, () => goal(this, "right"));
     this.physics.add.overlap(balls, energySpheres, ballCollidesEnergySphere);
 
-    var controlsText = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY/2, `Controls:\n Blue (left): ${bluePlayer.upInput} ${bluePlayer.rightInput} ${bluePlayer.downInput} ${bluePlayer.leftInput} to move, ${bluePlayer.actionInput} to jump/dash\n Red (right): ${redPlayer.upInput} ${redPlayer.rightInput} ${redPlayer.downInput} ${redPlayer.leftInput} to move, ${redPlayer.actionInput} to jump/dash\n Press SPACE to show/hide controls`, { font: "30px Arial"});
+    var controlsText = this.add.text(300, 55, `Controls:\n Blue (left): ${bluePlayer.upInput} ${bluePlayer.rightInput} ${bluePlayer.downInput} ${bluePlayer.leftInput} to move, ${bluePlayer.actionInput} to jump/dash\n Red (right): ${redPlayer.upInput} ${redPlayer.rightInput} ${redPlayer.downInput} ${redPlayer.leftInput} to move, ${redPlayer.actionInput} to jump/dash\n Press SPACE to show/hide controls`, { font: "20px Arial"});
     var showControlsAction = this.input.keyboard.addKey("SPACE");
     showControlsAction.on('down', () => { controlsText.setVisible(!controlsText.visible); });
     controlsText.setOrigin(0.5);
 
-    bluePlayer.enterName().then(text1 => {
-        redPlayer.enterName().then(text2 => {
-            text1.visible = false;
-            text2.visible = false;
+    bluePlayer.enterName().then(res => {
+        redPlayer.enterName().then(res2 => {
+            res2.handler.resetKeys();
+            res.text.visible = false;
+            res2.text.visible = false;
             controlsText.setVisible(false);
             redPlayer.movementEnabled = true;
             bluePlayer.movementEnabled = true;
@@ -273,7 +273,7 @@ function ballCollidesEnergySphere(ball, sphere){ //some yucky linear algebra, ju
     let bounceVector = new Phaser.Math.Vector2(1, 0);
     bounceVector.setAngle(angle);
     bounceVector.scale(-1);
-    bounceVector.scale(600 + incomingSpeed/3);
+    bounceVector.scale(560 + incomingSpeed/3);
     ball.setVelocity(bounceVector.x, bounceVector.y);
     return false;
 }
@@ -294,6 +294,7 @@ class Player{
         this.inputVector = new Phaser.Math.Vector2(0, 0);
         this.velocityScalar = 1;
         this.movementEnabled = true;
+        this.nameEntryDisabled = false;
     }
 
     create(){
@@ -322,7 +323,7 @@ class Player{
         if(!this.movementEnabled) return;
         if(!this.dashing || (this.gameObject.body.velocity.x < 0) != (right - left < 0) || this.gameObject.body.velocity.x == 0){
             this.dashing = false;
-            if(this.velocityScalar == 2){
+            if(this.velocityScalar == 2.5){
                 this.velocityScalar = 1.5;
             }
         }
@@ -351,23 +352,28 @@ class Player{
         return new Promise((resolve, reject) => {
             this.nameEntered = false;
             let nameEntry = this.scene.add.text(this.startX, this.startY - 34, '', { font: '20px Courier', fill: '#ffffff' });
+            let nameEntryPrompt = this.scene.add.text(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY, 'ENTER NAMES', { font: "70px Arial" });
+            nameEntryPrompt.setOrigin(0.5);
             nameEntry.setOrigin(0.5);
-            (function(nameText, scene, context) {
-                scene.input.keyboard.on("keydown", function() {
-                if (event.keyCode === 8 && nameText.text.length > 0)
-                {
-                    nameText.text = nameText.text.substr(0, nameText.text.length - 1);
-                }
-                else if (event.keyCode === 32 || (event.keyCode >= 48 && event.keyCode < 90 && nameText.text.length < 5))
-                {
-                    nameText.text += event.key.toUpperCase();
-                }
-                else if (event.keyCode === 13){
-                    context.name = nameText.text;
-                    resolve(nameText);
-                }
+            (function(nameText, namePromptText, scene, context) {
+                var handler = scene.input.keyboard.on("keydown", function() {
+                    if(context.nameEntryDisabled) return;
+                    if (event.keyCode === 8 && nameText.text.length > 0)
+                    {
+                        nameText.text = nameText.text.substr(0, nameText.text.length - 1);
+                    }
+                    else if (event.keyCode === 32 || (event.keyCode >= 48 && event.keyCode < 90 && nameText.text.length < 5))
+                    {
+                        nameText.text += event.key.toUpperCase();
+                    }
+                    else if (event.keyCode === 13){
+                        context.name = nameText.text;
+                        namePromptText.destroy();
+                        context.nameEntryDisabled = true;
+                        resolve({text: nameEntry, handler: handler});
+                    }
                 });
-            })(nameEntry, this.scene, this)
+            })(nameEntry, nameEntryPrompt, this.scene, this)
         })
     }
 
@@ -386,11 +392,11 @@ class Player{
             }
         }
         else if(this.left.isDown && this.down.isDown && this.gameObject.body.blocked.down){
-            this.velocityScalar = 2;
+            this.velocityScalar = 2.5;
             this.dashing = true;
         }
         else if(this.right.isDown && this.down.isDown && this.gameObject.body.blocked.down){
-            this.velocityScalar = 2;
+            this.velocityScalar = 2.5;
             this.dashing = true;
         }
         else if(this.down.isDown && !this.gameObject.body.blocked.down){
@@ -406,6 +412,21 @@ class Player{
             this.energySphere.setTintFill(this.color);
         }
         else{
+            let lastSphereCenter = this.energySphere.getCenter();
+            let energySphereMirage = this.scene.add.image(lastSphereCenter.x, lastSphereCenter.y, "energysphere");
+            energySphereMirage.setScale(6.5);
+            energySphereMirage.setTintFill(this.color);
+            let mirageFadeTimer = this.scene.time.addEvent({
+                delay: 50,
+                loop: true,
+                timeScale: this.scene.time.timeScale,
+                callback: () => {
+                    energySphereMirage.setAlpha(energySphereMirage.alpha - .15);
+                    if(energySphereMirage.alpha < 0){
+                        mirageFadeTimer.destroy();
+                    }
+                }
+            })
             this.energySphere.setPosition(playerCenter.x, playerCenter.y).refreshBody();
         }
     }
