@@ -271,7 +271,6 @@ function ballCollidesEnergySphere(ball, sphere){ //some yucky linear algebra, ju
     sphereToBall.scale(-1);
     let newPos = new Phaser.Math.Vector2(sphereCenter.x + sphereToBall.x, sphereCenter.y + sphereToBall.y);
     ball.setPosition(newPos.x, newPos.y).refreshBody();
-    sphereToBall.scale(.1);
     let bounceVector = new Phaser.Math.Vector2(1, 0);
     bounceVector.setAngle(angle);
     bounceVector.scale(-1);
