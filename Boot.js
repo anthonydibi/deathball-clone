@@ -51,6 +51,7 @@ function preload ()
     this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
     bluePlayer = new Player(this, 0x0000ff, 140, 920, "dude", "X", "W", "D", "S", "A");
     redPlayer = new Player(this, 0xff0000, 1780, 920, "dude", "L", "UP", "RIGHT", "DOWN", "LEFT");
+    this.physics.world.setFPS(240);
 }
 
 function create ()
@@ -70,8 +71,8 @@ function create ()
     goals.add(blueGoal);
     goals.add(redGoal);
 
-    blueScore = this.add.text(44, 330, '3', { font: "40px Arial" });
-    redScore = this.add.text(1856, 330, '3', { font: "40px Arial"});
+    blueScore = this.add.text(44, 330, '3', { font: "40px arcade" });
+    redScore = this.add.text(1856, 330, '3', { font: "40px arcade"});
 
     this.anims.create({
         key: 'left',
@@ -99,7 +100,6 @@ function create ()
     let balls = this.physics.add.group();
 
     ball = balls.create(this.cameras.main.centerX, 900, "ball");
-    ball.body.setCircle(ball.body.width/2);
     ball.setMaxVelocity(1000);
     ball.body.setAllowGravity(false);
 
@@ -110,7 +110,7 @@ function create ()
     ball.setMass(1);
 
     this.physics.add.collider(balls, arena.platforms, (ball, tile) => {
-        ball.setVelocityX(ball.body.velocity.x * .985);
+        ball.setVelocityX(ball.body.velocity.x * .99);
     });
     this.physics.add.collider(bluePlayer.gameObject, balls);
     this.physics.add.collider(redPlayer.gameObject, balls);
@@ -118,14 +118,15 @@ function create ()
     redGoalCollider = this.physics.add.collider(balls, redGoal, () => goal(this, "right"));
     this.physics.add.overlap(balls, energySpheres, ballCollidesEnergySphere);
 
-    var controlsText = this.add.text(300, 55, `Controls:\n Blue (left): ${bluePlayer.upInput} ${bluePlayer.rightInput} ${bluePlayer.downInput} ${bluePlayer.leftInput} to move, ${bluePlayer.actionInput} to jump/dash\n Red (right): ${redPlayer.upInput} ${redPlayer.rightInput} ${redPlayer.downInput} ${redPlayer.leftInput} to move, ${redPlayer.actionInput} to jump/dash\n Press SPACE to show/hide controls`, { font: "20px Arial"});
+    var controlsText = this.add.text(300, 55, `Controls:\n Blue (left): ${bluePlayer.upInput} ${bluePlayer.rightInput} ${bluePlayer.downInput} ${bluePlayer.leftInput} to move, ${bluePlayer.actionInput} to jump/dash\n Red (right): ${redPlayer.upInput} ${redPlayer.rightInput} ${redPlayer.downInput} ${redPlayer.leftInput} to move, ${redPlayer.actionInput} to jump/dash\n Press SPACE to show/hide controls`, { font: "20px arcade"});
     var showControlsAction = this.input.keyboard.addKey("SPACE");
     showControlsAction.on('down', () => { controlsText.setVisible(!controlsText.visible); });
     controlsText.setOrigin(0.5);
 
     bluePlayer.enterName().then(res => {
+        this.input.keyboard.off("keydown");
         redPlayer.enterName().then(res2 => {
-            res2.handler.resetKeys();
+            this.input.keyboard.off("keydown");
             res.text.visible = false;
             res2.text.visible = false;
             controlsText.setVisible(false);
@@ -147,7 +148,7 @@ function update ()
     let redGoalCenter = redGoal.getCenter();
     let blueGoalDist = Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, blueGoalCenter.x, blueGoalCenter.y);
     let redGoalDist = Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, redGoalCenter.x, redGoalCenter.y);
-    if((blueGoalDist < 400 || redGoalDist < 400) && ballCenter.y < (blueGoalCenter.y + blueGoal.height/2) /*&& (blueGoalDist < redGoalDist ? ball.body.velocity.x <= 0 : ball.body.velocity.x >= 0)*/){
+    if((blueGoalDist < 250 || redGoalDist < 250) && ballCenter.y < (blueGoalCenter.y + blueGoal.height/2) /*&& (blueGoalDist < redGoalDist ? ball.body.velocity.x <= 0 : ball.body.velocity.x >= 0)*/){
         if(slowmoCooldown ? slowmoCooldown.getRemaining() === 0 : true){
             this.physics.world.timeScale = 4; 
             this.time.timeScale = 4;
@@ -184,13 +185,13 @@ function goal(scene, side){
         else if(redWin){
             api.uploadGame(redPlayer.name, bluePlayer.name, parseInt(redScore.text), parseInt(blueScore.text));
         }
-        var gameOverText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, 'GAME OVER', { font: "100px Arial" });
+        var gameOverText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, 'GAME OVER', { font: "100px arcade" });
         gameOverText.setOrigin(0.5);
         var gameOverTextTimer = scene.time.addEvent({
             delay:15000,
             callback: () => {
                 gameOverText.destroy();
-                var winnerText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, (blueWin ? bluePlayer.name : "") + (redWin ? redPlayer.name : "") + " WINS", { font: "100px Arial" });
+                var winnerText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, (blueWin ? bluePlayer.name : "") + (redWin ? redPlayer.name : "") + " WINS", { font: "100px arcade" });
                 winnerText.setOrigin(0.5);
                 var winnerTextTimer = scene.time.addEvent({
                     delay: 15000,
@@ -239,7 +240,7 @@ function countdownRound(scene){
     redPlayer.left.isDown = false;
     redPlayer.right.isDown = false;
     scene.input.keyboard.manager.enabled = false;
-    var countdownText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, '3', { font: "100px Arial" });
+    var countdownText = scene.add.text(scene.cameras.main.centerX, scene.cameras.main.centerY, '3', { font: "100px arcade" });
     countdownText.setOrigin(0.5);
     var timer = scene.time.addEvent({
         delay: 1000,                
@@ -263,7 +264,7 @@ function ballCollidesEnergySphere(ball, sphere){ //some yucky linear algebra, ju
     let sphereCenter = sphere.getCenter();
     let angle = Phaser.Math.Angle.Between(ballCenter.x, ballCenter.y, sphereCenter.x, sphereCenter.y);
     var sphereToBall = new Phaser.Math.Vector2(1, 0);
-    sphereToBall.scale(sphere.body.width/2 + ball.body.width/2 + 2);
+    sphereToBall.scale(sphere.body.width/2 + ball.body.width/2 + 8);
     sphereToBall.setAngle(angle);
     sphereToBall.scale(-1);
     let newPos = new Phaser.Math.Vector2(sphereCenter.x + sphereToBall.x, sphereCenter.y + sphereToBall.y);
@@ -293,7 +294,6 @@ class Player{
         this.inputVector = new Phaser.Math.Vector2(0, 0);
         this.velocityScalar = 1;
         this.movementEnabled = true;
-        this.nameEntryDisabled = false;
     }
 
     create(){
@@ -319,6 +319,9 @@ class Player{
         down = this.down.isDown ? 1 : 0;
         left = this.left.isDown ? 1 : 0;
         if(!this.movementEnabled) return;
+        if(!this.gameObject.body.blocked.down){
+            this.dashing = false;
+        }
         if(!this.dashing || (this.gameObject.body.velocity.x < 0) != (right - left < 0) || this.gameObject.body.velocity.x == 0){
             this.dashing = false;
             if(this.velocityScalar == 2.5){
@@ -349,13 +352,12 @@ class Player{
     enterName(){
         return new Promise((resolve, reject) => {
             this.nameEntered = false;
-            let nameEntry = this.scene.add.text(this.startX, this.startY - 34, '', { font: '20px Courier', fill: '#ffffff' });
-            let nameEntryPrompt = this.scene.add.text(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY, 'ENTER NAMES', { font: "70px Arial" });
+            let nameEntry = this.scene.add.text(this.startX, this.startY - 34, '', { font: '20px arcade', fill: '#ffffff' });
+            let nameEntryPrompt = this.scene.add.text(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY, 'ENTER NAMES', { font: "70px arcade" });
             nameEntryPrompt.setOrigin(0.5);
             nameEntry.setOrigin(0.5);
             (function(nameText, namePromptText, scene, context) {
                 var handler = scene.input.keyboard.on("keydown", function() {
-                    if(context.nameEntryDisabled) return;
                     if (event.keyCode === 8 && nameText.text.length > 0)
                     {
                         nameText.text = nameText.text.substr(0, nameText.text.length - 1);
@@ -380,7 +382,7 @@ class Player{
         var playerCenter = this.gameObject.getCenter();
         var ballCenter = ball.getCenter();
         if(Phaser.Math.Distance.Between(playerCenter.x, playerCenter.y, ballCenter.x, ballCenter.y) <= (this.gameObject.width/2 + ball.width/2) + 2 && this.gameObject.body.blocked.down ){ // jump the ball if player is on ground and near it
-            ball.setVelocityY(ball.body.velocity.y - 700);
+            ball.setVelocityY(ball.body.velocity.y - 650);
         }
         if(!this.down.isDown){
             this.gameObject.setVelocityY(-620);
