@@ -319,9 +319,6 @@ class Player{
         down = this.down.isDown ? 1 : 0;
         left = this.left.isDown ? 1 : 0;
         if(!this.movementEnabled) return;
-        if(!this.gameObject.body.blocked.down){
-            this.dashing = false;
-        }
         if(!this.dashing || (this.gameObject.body.velocity.x < 0) != (right - left < 0) || this.gameObject.body.velocity.x == 0){
             this.dashing = false;
             if(this.velocityScalar == 2.5){
@@ -457,7 +454,6 @@ class Arena{
         const tileset = map.addTilesetImage(this.tilesetKey, 'tiles');
         this.platforms = map.createLayer(this.platformLayerKey, tileset, 0, 0);
         this.platforms.setCollisionByExclusion(-1, true);
-        
     }
 }
 
