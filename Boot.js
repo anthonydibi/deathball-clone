@@ -380,8 +380,8 @@ class Player{
         return new Promise((resolve, reject) => {
             this.nameEntered = false;
             let nameEntry = this.scene.add.text(this.startX, this.startY - 10, '', { font: '20px arcade', fill: '#ffffff' });
-            let nameEntryPrompt = this.scene.add.text(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY - 200, `PLAYER ${this.playerNum} ENTER NAME`, { font: "70px arcade" });
-            let nameEntryPrompt2 = this.scene.add.text(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY - 100, `TYPE THEN PRESS ENTER`, { font: "40px arcade" });
+            let nameEntryPrompt = this.scene.add.text(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY - 150, `PLAYER ${this.playerNum} ENTER NAME`, { font: "70px arcade" });
+            let nameEntryPrompt2 = this.scene.add.text(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY - 110, `TYPE THEN PRESS ENTER`, { font: "40px arcade" });
             nameEntryPrompt.setOrigin(0.5);
             nameEntryPrompt2.setOrigin(0.5);
             nameEntry.setOrigin(0.5);
