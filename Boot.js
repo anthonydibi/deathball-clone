@@ -166,9 +166,8 @@ function update ()
 }
 
 function goal(scene, side){
+    if(scored) return;
     scored = true;
-    blueGoalCollider.active = false;
-    redGoalCollider.active = false;
     scene.physics.world.timeScale = 4; 
     scene.time.timeScale = 4;
     if(side === "left"){
@@ -224,8 +223,6 @@ function goal(scene, side){
 
 function reset(scene){
     scored = false;
-    blueGoalCollider.active = true;
-    redGoalCollider.active = true;
     scene.physics.world.timeScale = 1;
     scene.time.timeScale = 1;
     bluePlayer.reset();
