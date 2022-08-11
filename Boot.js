@@ -49,8 +49,8 @@ function preload ()
     this.load.image('energysphere', 'assets/Energy_Ball.png');
     this.load.image('ball', 'assets/ball.png');
     this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
-    bluePlayer = new Player(this, 0x0000ff, 140, 920, "dude", "X", "W", "D", "S", "A");
-    redPlayer = new Player(this, 0xff0000, 1780, 920, "dude", "L", "UP", "RIGHT", "DOWN", "LEFT");
+    bluePlayer = new Player(this, 1, 0x0000ff, 140, 920, "dude", "X", "W", "D", "S", "A");
+    redPlayer = new Player(this, 2, 0xff0000, 1780, 920, "dude", "L", "UP", "RIGHT", "DOWN", "LEFT");
     this.physics.world.setFPS(240);
 }
 
@@ -305,8 +305,9 @@ function pinch(ball, sphere){
 }
 
 class Player{
-    constructor(scene, color, startX, startY, sprite, actionInput, upInput, rightInput, downInput, leftInput){
+    constructor(scene, playerNum, color, startX, startY, sprite, actionInput, upInput, rightInput, downInput, leftInput){
         this.scene = scene;
+        this.playerNum = playerNum;
         this.color = color;
         this.startX = startX;
         this.startY = startY;
@@ -372,17 +373,19 @@ class Player{
             this.gameObject.setVelocityX(0);
             this.dashing = false;
         }
-        this.scene.physics.world.wrap(this.gameObject);
+        this.scene.physics.world.wrap(this.gameObject, 15);
     }
 
     enterName(){
         return new Promise((resolve, reject) => {
             this.nameEntered = false;
             let nameEntry = this.scene.add.text(this.startX, this.startY - 34, '', { font: '20px arcade', fill: '#ffffff' });
-            let nameEntryPrompt = this.scene.add.text(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY, 'ENTER NAMES', { font: "70px arcade" });
+            let nameEntryPrompt = this.scene.add.text(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY - 200, `PLAYER ${this.playerNum} ENTER NAME`, { font: "70px arcade" });
+            let nameEntryPrompt2 = this.scene.add.text(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY - 100, `TYPE THEN PRESS ENTER`, { font: "40px arcade" });
             nameEntryPrompt.setOrigin(0.5);
+            nameEntryPrompt2.setOrigin(0.5);
             nameEntry.setOrigin(0.5);
-            (function(nameText, namePromptText, scene, context) {
+            (function(nameText, namePromptText, namePromptText2, scene, context) {
                 var handler = scene.input.keyboard.on("keydown", function() {
                     if (event.keyCode === 8 && nameText.text.length > 0)
                     {
@@ -395,11 +398,12 @@ class Player{
                     else if (event.keyCode === 13){
                         context.name = nameText.text;
                         namePromptText.destroy();
+                        namePromptText2.destroy();
                         context.nameEntryDisabled = true;
                         resolve({text: nameEntry, handler: handler});
                     }
                 });
-            })(nameEntry, nameEntryPrompt, this.scene, this)
+            })(nameEntry, nameEntryPrompt, nameEntryPrompt2, this.scene, this)
         })
     }
 
