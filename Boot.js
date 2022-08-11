@@ -43,7 +43,7 @@ var game = new Phaser.Game(config);
 
 function preload ()
 {
-    this.physics.world.TILE_BIAS = 32;
+    this.physics.world.TILE_BIAS = 36;
     arena = new Arena(this, 'assets/Tileset.png', 'assets/map2.json', 'dungeon', 'Platforms')
     arena.preload();
     this.load.image('energysphere', 'assets/Energy_Ball.png');
@@ -51,7 +51,7 @@ function preload ()
     this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
     bluePlayer = new Player(this, 0x0000ff, 140, 920, "dude", "X", "W", "D", "S", "A");
     redPlayer = new Player(this, 0xff0000, 1780, 920, "dude", "L", "UP", "RIGHT", "DOWN", "LEFT");
-    this.physics.world.setFPS(120);
+    this.physics.world.setFPS(240);
 }
 
 function create ()
@@ -105,7 +105,7 @@ function create ()
 
     ball.setBounce(.7, .45);
 
-    ball.setScale(.45);
+    ball.setScale(.47);
 
     ball.setMass(1);
 
@@ -116,7 +116,9 @@ function create ()
     this.physics.add.collider(redPlayer.gameObject, balls);
     blueGoalCollider = this.physics.add.collider(balls, blueGoal, () => goal(this, "left"));
     redGoalCollider = this.physics.add.collider(balls, redGoal, () => goal(this, "right"));
-    this.physics.add.overlap(balls, energySpheres, ballCollidesEnergySphere);
+    this.physics.add.collider(balls, energySpheres);
+    this.physics.add.collider(balls, energySpheres, ballCollidesEnergySphere);
+    this.physics.add.overlap(balls, energySpheres, pinch);
 
     var controlsText = this.add.text(300, 55, `Controls:\n Blue (left): ${bluePlayer.upInput} ${bluePlayer.rightInput} ${bluePlayer.downInput} ${bluePlayer.leftInput} to move, ${bluePlayer.actionInput} to jump/dash\n Red (right): ${redPlayer.upInput} ${redPlayer.rightInput} ${redPlayer.downInput} ${redPlayer.leftInput} to move, ${redPlayer.actionInput} to jump/dash\n Press SPACE to show/hide controls`, { font: "20px arcade"});
     var showControlsAction = this.input.keyboard.addKey("SPACE");
@@ -264,18 +266,44 @@ function ballCollidesEnergySphere(ball, sphere){ //some yucky linear algebra, ju
     let sphereCenter = sphere.getCenter();
     let angle = Phaser.Math.Angle.Between(ballCenter.x, ballCenter.y, sphereCenter.x, sphereCenter.y);
     var sphereToBall = new Phaser.Math.Vector2(1, 0);
-    let maxSphereDist = sphere.body.width/2;
-    let maxBallDist = Math.sqrt(Math.pow(ball.body.width/2, 2) * 2);
-    sphereToBall.scale(maxSphereDist + maxBallDist);
+    // let maxSphereDist = sphere.body.width/2;
+    // let maxBallDist = Math.sqrt(Math.pow(ball.body.width/2, 2) * 2);
+    // sphereToBall.scale(maxSphereDist + maxBallDist);
     sphereToBall.setAngle(angle);
+    sphereToBall.scale(500 + incomingSpeed/8);
     sphereToBall.scale(-1);
-    let newPos = new Phaser.Math.Vector2(sphereCenter.x + sphereToBall.x, sphereCenter.y + sphereToBall.y);
-    ball.setPosition(newPos.x, newPos.y).refreshBody();
-    let bounceVector = new Phaser.Math.Vector2(1, 0);
-    bounceVector.setAngle(angle);
-    bounceVector.scale(-1);
-    bounceVector.scale(560 + incomingSpeed/3);
-    ball.setVelocity(bounceVector.x, bounceVector.y);
+    // let newPos = new Phaser.Math.Vector2(sphereCenter.x + sphereToBall.x, sphereCenter.y + sphereToBall.y);
+    // ball.setPosition(newPos.x, newPos.y).refreshBody();
+    // let bounceVector = new Phaser.Math.Vector2(1, 0);
+    // bounceVector.setAngle(angle);
+    // bounceVector.scale(-1);
+    // bounceVector.scale(560 + incomingSpeed/3);
+    // ball.setVelocity(bounceVector.x, bounceVector.y);
+    ball.setVelocity(sphereToBall.x, sphereToBall.y);
+    return false;
+}
+
+function pinch(ball, sphere){
+    let incomingSpeed = ball.body.velocity.length();
+    let ballCenter = ball.getCenter();
+    let sphereCenter = sphere.getCenter();
+    let angle = Phaser.Math.Angle.Between(ballCenter.x, ballCenter.y, sphereCenter.x, sphereCenter.y);
+    let sphereToBall = new Phaser.Math.Vector2(1, 0);
+    let sphereToBallDist = Phaser.Math.Distance.Between(ballCenter.x, ballCenter.y, sphereCenter.x, sphereCenter.y);
+    // let maxSphereDist = sphere.body.width/2;
+    // let maxBallDist = Math.sqrt(Math.pow(ball.body.width/2, 2) * 2);
+    // sphereToBall.scale(maxSphereDist + maxBallDist);
+    sphereToBall.setAngle(angle);
+    sphereToBall.scale(800 + 400/sphereToBallDist + incomingSpeed/6);
+    sphereToBall.scale(-1);
+    // let newPos = new Phaser.Math.Vector2(sphereCenter.x + sphereToBall.x, sphereCenter.y + sphereToBall.y);
+    // ball.setPosition(newPos.x, newPos.y).refreshBody();
+    // let bounceVector = new Phaser.Math.Vector2(1, 0);
+    // bounceVector.setAngle(angle);
+    // bounceVector.scale(-1);
+    // bounceVector.scale(560 + incomingSpeed/3);
+    // ball.setVelocity(bounceVector.x, bounceVector.y);
+    ball.setVelocity(sphereToBall.x, sphereToBall.y);
     return false;
 }
 
@@ -330,7 +358,7 @@ class Player{
         if(this.gameObject.body.blocked.down && !this.dashing){
             this.velocityScalar = 1;
         }
-        var force = (right - left) * 15 * this.velocityScalar;
+        var force = (right - left) * 25 * this.velocityScalar;
         if(Math.abs(this.gameObject.body.velocity.x) < maxVelocity || ((this.gameObject.body.velocity.x < 0) != (force < 0)) ) this.gameObject.body.velocity.x += force;
         // if(this.gameObject.body.velocity.x < -maxVelocity) this.gameObject.setVelocityX(-maxVelocity);
         // if(this.gameObject.body.velocity.x > maxVelocity) this.gameObject.setVelocityX(maxVelocity);
