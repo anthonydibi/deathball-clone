@@ -51,7 +51,7 @@ function preload ()
     this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
     bluePlayer = new Player(this, 0x0000ff, 140, 920, "dude", "X", "W", "D", "S", "A");
     redPlayer = new Player(this, 0xff0000, 1780, 920, "dude", "L", "UP", "RIGHT", "DOWN", "LEFT");
-    this.physics.world.setFPS(240);
+    this.physics.world.setFPS(120);
 }
 
 function create ()
@@ -314,6 +314,7 @@ class Player{
     }
 
     update(){
+        var maxVelocity = 450 * this.velocityScalar;
         var up, right, down, left = 0;
         up = this.up.isDown ? 1 : 0;
         right = this.right.isDown ? 1 : 0;
@@ -329,12 +330,14 @@ class Player{
         if(this.gameObject.body.blocked.down && !this.dashing){
             this.velocityScalar = 1;
         }
-        var velocityX = (right - left) * 450 * this.velocityScalar;
-        this.gameObject.setVelocityX(velocityX);
-        if(velocityX > 0){
+        var force = (right - left) * 15 * this.velocityScalar;
+        if(Math.abs(this.gameObject.body.velocity.x) < maxVelocity || ((this.gameObject.body.velocity.x < 0) != (force < 0)) ) this.gameObject.body.velocity.x += force;
+        // if(this.gameObject.body.velocity.x < -maxVelocity) this.gameObject.setVelocityX(-maxVelocity);
+        // if(this.gameObject.body.velocity.x > maxVelocity) this.gameObject.setVelocityX(maxVelocity);
+        if(force > 0){
             this.gameObject.anims.play("right");
         }
-        else if(velocityX < 0){
+        else if(force < 0){
             this.gameObject.anims.play("left");
         }
         else{
@@ -385,7 +388,7 @@ class Player{
         if(!this.down.isDown){
             this.gameObject.setVelocityY(-620);
             if(!this.gameObject.body.blocked.down){
-                this.velocityScalar = 1.3;
+                this.velocityScalar = 1.5;
                 this.dashing = true;
             }
         }
